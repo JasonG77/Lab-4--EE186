@@ -28,6 +28,14 @@ Part 3 DAC:
 (1 Point) If B = 9, what is Vout? Express your answer in terms of Vref . Use the DAC mode that
 provides the best resolution available on your MCU (refer to the data sheet).
 
+Vout = (9 / 4096) * Vref
+
 (3 Point) How does the sampling rate of the DAC affect the quality of the output waveform? What
 are the differences in sound perception between sine, square, and sawtooth waves? Why do we need a
 capacitor in the signal path when sending an audio signal to a speaker or earphones?
+
+The sampling rate of the DAC directly affects the quality of the output waveform. According to the Nyquist-Shannon sampling theorem, the sampling frequency must be at least twice the maximum frequency component in the signal to accurately reconstruct it. If the sampling rate is too low, the output will suffer from aliasing (false, unwanted frequencies) and will look choppy, not smooth.
+
+Different waveforms have different harmonic content, which changes their perceived sound (timbre). Sine waves sound pure, smooth, and clean because they contain only the fundamental frequency. Square waves sound "buzzy," "hollow," or "digital" because they contain odd harmonics. Sawtooth waves sound "bright," "full," or "harsh" because they contain both odd and even harmonics.
+
+A capacitor is needed in the audio signal path when sending the signal to a speaker or earphones because it blocks the DC offset voltage. If this DC voltage were fed directly to the speaker's coil, it would waste power, dsmsgr it, and cause the speaker cone to remain static at the midpoint, reducing the dynamic range of the audio signal.
