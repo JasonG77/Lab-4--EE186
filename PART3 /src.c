@@ -4,15 +4,7 @@
   * @file           : main.c
   * @brief          : Main program body
   ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2025 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
+
   ******************************************************************************
   */
 /* USER CODE END Header */
@@ -40,7 +32,9 @@
 /* USER CODE BEGIN PD */
 #define VDDA     3.3f
 #define ADC_MAX  4095.0f
-#define R_FIXED  10000.0f
+#define SAMPLES 32
+#define DAC_RES 4095
+#define DAC_MID (DAC_RES / 2)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -51,17 +45,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-#define VDDA     3.3f       // analog supply
-#define ADC_MAX  4095.0f    // 12-bit full scale
-#define R_FIXED  10000.0f   // your 10 kΩ resistor in the divider
 
-#define SAMPLES 32          // Number of points in the sine wave
-#define DAC_RES 4095        // 12-bit DAC maximum value
-#define DAC_MID (DAC_RES / 2) // 2047 (Midpoint for DC offset)
-
-// Lookup table for one sine wave cycle
-uint16_t SineWave[SAMPLES];
-uint16_t DacValue = 0;       // Current DAC digital value (0 to 4095)
+uint16_t DacVal = 0;       // Current DAC digital value (0 to 4095)
 int8_t RampDirection = 1;    // 1 for incrementing, -1 for decrementing
 /* USER CODE END PV */
 
@@ -128,32 +113,28 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  // 1. Update the DAC Output Value
-	      DacValue += RampDirection;
+	
+	      DacVal += RampDirection;
 
-	      // Check if limits are reached
-	      if (DacValue >= ADC_MAX) {
-	          DacValue = ADC_MAX;
-	          RampDirection = -1; // Switch to decrementing
-	      } else if (DacValue <= 0) {
-	          DacValue = 0;
-	          RampDirection = 1;  // Switch to incrementing
+	      if (DacVal >= ADC_MAX) {
+	          DacVal = ADC_MAX;
+	          RampDirection = -1; 
+	      } else if (DacVal <= 0) {
+	          DacVal = 0;
+	          RampDirection = 1;  
 	      }
 
-	      // Write the new value to the DAC output register
-	      HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, DacValue);
+	      HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, DacVal);
 
-	      // 2. Read the ADC Input (which is wired to the DAC output)
 	      HAL_ADC_Start(&hadc1);
 	      uint32_t adc = 0;
 	      if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK)
 	      {
 	          adc = HAL_ADC_GetValue(&hadc1);
 	      }
-	      HAL_ADC_Stop(&hadc1); // Stop conversion
+	      HAL_ADC_Stop(&hadc1); 
 
-	      // 3. Convert to Voltages
-	      float DacV = (float)DacValue * VDDA / ADC_MAX;
+	      float DacV = (float)DacVal * VDDA / ADC_MAX;
 	      float AdcV = (float)adc * VDDA / ADC_MAX;
 	      float Difference = AdcV - DacV;
 
@@ -248,4 +229,5 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
 
