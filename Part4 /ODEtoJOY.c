@@ -22,14 +22,13 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define SAMPLES        256            // LUT size used by DAC DMA
+#define SAMPLES        256            
 #define DAC_OFFSET     2048
 #define PI             3.14159265359f
 
-// Theremin tuning
-#define FREQ_MIN_HZ    200.0f         // low end of pitch sweep
-#define FREQ_MAX_HZ    1200.0f        // high end
-#define ADC_SMOOTH_A   0.15f          // EMA smoothing (0..1)
+#define FREQ_MIN_HZ    200.0f       
+#define FREQ_MAX_HZ    1200.0f       
+#define Smoothen_ADC   0.15f          
 static const float notes[] = {
 		// ODE TO JOY
 		// Line 1: E E F G, G F E D
@@ -44,7 +43,7 @@ static const float notes[] = {
 		    // Line 4: C C D E, D C C
 		    261.63f, 261.63f, 293.66f, 329.63f, 293.66f, 261.63f, 261.63f
 };
-static const int NUM_NOTES = sizeof(notes)/sizeof(notes[0]);
+static const int NumNotes = sizeof(notes)/sizeof(notes[0]);
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -58,13 +57,13 @@ static const int NUM_NOTES = sizeof(notes)/sizeof(notes[0]);
 // ---- Analog constants ----
 
 uint16_t SineTable[SAMPLES];
-static float adc_ema = 0.0f;     // smoothed ADC reading
+static float adc_ema = 0.0f;   
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-static float map_adc_to_freq(uint32_t adc);
+static float adc_Freq(uint32_t adc);
 static void  changeNote(float freq_hz);
 /* USER CODE END PFP */
 
@@ -77,24 +76,26 @@ int _write(int file, char *ptr, int len)
   return len;
 }
 
-static float map_adc_to_freq(uint32_t adc)
+static float adc_Freq(uint32_t adc)
 {
-  float x = (float)adc / 4095.0f;                         // 0..1
+  float x = (float)adc / 4095.0f;                         
   return FREQ_MIN_HZ * powf(FREQ_MAX_HZ / FREQ_MIN_HZ, x);
 }
 
-// Retune TIM6 (which clocks the DAC) to change output frequency without stopping DMA.
-// f_out = Fs / SAMPLES, with Fs = (PCLK1)/((PSC+1)*(ARR+1)).
 static void changeNote(float freq_hz)
 {
-  if (freq_hz < 1.0f) return;
-
+  if (freq_hz < 1.0f) {
+	  return;
+  }
   uint32_t pclk1 = HAL_RCC_GetPCLK1Freq();
-  uint32_t psc   = htim6.Init.Prescaler + 1;              // use the PSC you already configured
-  float    Fs    = freq_hz * (float)SAMPLES;              // desired DAC update rate
+  uint32_t psc   = htim6.Init.Prescaler + 1;              
+  float    Fs    = freq_hz * (float)SAMPLES;              
 
   uint32_t arr = (uint32_t)((float)pclk1 / ((float)psc * Fs) + 0.5f);
-  if (arr == 0) arr = 1;
+  if (arr == 0) {
+	  
+	  arr = 1;
+  }
   arr -= 1;
 
   __HAL_TIM_DISABLE(&htim6);
@@ -102,12 +103,12 @@ static void changeNote(float freq_hz)
   __HAL_TIM_ENABLE(&htim6);
 }
 
-static float quantize_to_note(uint32_t adc)
+static float quantize(uint32_t adc)
 {
-    float x = (float)adc / 4095.0f;          // 0..1
-    int index = (int)(x * NUM_NOTES);        // 0..NUM_NOTES
+    float x = (float)adc / 4095.0f;         
+    int index = (int)(x * NumNotes);        
     if (index < 0) index = 0;
-    if (index >= NUM_NOTES) index = NUM_NOTES - 1;
+    if (index >= NumNotes) index = NumNotes - 1;
     return notes[index];
 }
 /* USER CODE END 0 */
@@ -148,20 +149,17 @@ int main(void)
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
 
-  // Build sine LUT (centered, full-scale). You can scale amplitude if you like.
   for (int i = 0; i < SAMPLES; i++)
   {
     float theta = (2.0f * PI * i) / (float)SAMPLES;
     float s = sinf(theta);                       // -1..+1
     SineTable[i] = (uint16_t)(DAC_OFFSET + 2047.0f * s);   // 0..4095
   }
-  setvbuf(stdout, NULL, _IONBF, 0);                                // <-- NEW
+  setvbuf(stdout, NULL, _IONBF, 0);                             
 
-  // Start DAC with DMA (circular)                                // <-- NEW
   HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1,
                     (uint32_t*)SineTable, SAMPLES, DAC_ALIGN_12B_R);
 
-  // Start TIM6 so it clocks the DAC via TRGO                      // <-- NEW
   HAL_TIM_Base_Start(&htim6);
 
   uint32_t pclk1 = HAL_RCC_GetPCLK1Freq();
@@ -169,8 +167,7 @@ int main(void)
   uint32_t arr   = htim6.Init.Period + 1;
   uint32_t Fs    = pclk1 / psc / arr;
   float     f0   = (float)Fs / (float)SAMPLES;
-  printf("Start Fs=%lu Hz, f_out≈%.2f Hz, SAMPLES=%d\r\n",
-         (unsigned long)Fs, (double)f0, SAMPLES);
+
 
   /* USER CODE END 2 */
 
@@ -186,15 +183,12 @@ int main(void)
 	  HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
 	  uint32_t raw = HAL_ADC_GetValue(&hadc1);
 
-	  adc_ema = (1.0f - ADC_SMOOTH_A) * adc_ema + ADC_SMOOTH_A * (float)raw;
+	  adc_ema = (1.0f - Smoothen_ADC) * adc_ema + Smoothen_ADC * (float)raw;
 
-	  float freq = quantize_to_note((uint32_t)adc_ema);
+	  float freq = quantize((uint32_t)adc_ema);
 	  changeNote(freq);
 
-	  // Optional debug
-	  // printf("ADC=%4lu  freq=%.1f Hz\r\n", (unsigned long)raw, (double)freq);
-
-	  HAL_Delay(5);  // smooth pitch updates without audible zippering;
+	  HAL_Delay(5);  
   }
   /* USER CODE END 3 */
 }
