@@ -36,6 +36,8 @@ capacitor in the signal path when sending an audio signal to a speaker or earpho
 
 The sampling rate of the DAC directly affects the quality of the output waveform. According to the Nyquist-Shannon sampling theorem, the sampling frequency must be at least twice the maximum frequency component in the signal to accurately reconstruct it. If the sampling rate is too low, the output will suffer from aliasing (false, unwanted frequencies) and will look choppy, not smooth.
 
-Different waveforms have different harmonic content, which changes their perceived sound (timbre). Sine waves sound pure, smooth, and clean because they contain only the fundamental frequency. Square waves sound "buzzy," "hollow," or "digital" because they contain odd harmonics. Sawtooth waves sound "bright," "full," or "harsh" because they contain both odd and even harmonics.
+Different waveforms have different harmonic content, which changes their perceived sound (timbre). Sine waves sound pure, smooth, and clean because they contain only the fundamental frequency. Square waves sound buzzy because they contain odd harmonics. Sawtooth waves sound "harsh" because they contain both odd and even harmonics.
 
-A capacitor is needed in the audio signal path when sending the signal to a speaker or earphones because it blocks the DC offset voltage. If this DC voltage were fed directly to the speaker's coil, it would waste power, dsmsgr it, and cause the speaker cone to remain static at the midpoint, reducing the dynamic range of the audio signal.
+A capacitor is needed in the audio signal path when sending the signal to a speaker or earphones because it blocks the DC offset voltage. If this DC voltage were connected directly to the speaker's coil, it would waste power, damage it, and cause the speaker cone to remain static at the midpoint, reducing the dynamic range of the audio signal.
+
+--THE EXTRA CREDIT SONG IS ODE TO JOY!!!!!---
