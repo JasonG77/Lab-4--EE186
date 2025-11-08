@@ -56,7 +56,6 @@ static void  changeNote(float freq_hz);
 /* USER CODE BEGIN 0 */
 int _write(int file, char *ptr, int len)
 {
-  // Change hlpuart1 to the UART that goes to your PC (ST-LINK VCP).
   HAL_UART_Transmit(&hlpuart1, (uint8_t*)ptr, len, HAL_MAX_DELAY);
   return len;
 }
@@ -67,8 +66,6 @@ static float map_adc_to_freq(uint32_t adc)
   return FREQ_MIN_HZ * powf(FREQ_MAX_HZ / FREQ_MIN_HZ, x);
 }
 
-// Retune TIM6 (which clocks the DAC) to change output frequency without stopping DMA.
-// f_out = Fs / SAMPLES, with Fs = (PCLK1)/((PSC+1)*(ARR+1)).
 static void changeNote(float freq_hz)
 {
   if (freq_hz < 1.0f) return;
