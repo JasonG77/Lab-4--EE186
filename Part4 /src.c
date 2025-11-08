@@ -1,20 +1,4 @@
 /* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2025 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -38,15 +22,14 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define SAMPLES        256            // LUT size used by DAC DMA
+#define SAMPLES        256           
 #define DAC_OFFSET     2048
 #define PI             3.14159265359f
 
 // Theremin tuning
-#define FREQ_MIN_HZ    200.0f         // low end of pitch sweep
-#define FREQ_MAX_HZ    1200.0f        // high end
-#define ADC_SMOOTH_A   0.15f          // EMA smoothing (0..1)
-/* USER CODE END PD */
+#define FREQ_MIN_HZ    200.0f         /
+#define FREQ_MAX_HZ    1200.0f        
+#define Smoothen_ADC   0.15f /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
@@ -59,7 +42,7 @@
 // ---- Analog constants ----
 
 uint16_t SineTable[SAMPLES];
-static float adc_ema = 0.0f;     // smoothed ADC reading
+static float adc_ema = 0.0f;     g
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -91,8 +74,8 @@ static void changeNote(float freq_hz)
   if (freq_hz < 1.0f) return;
 
   uint32_t pclk1 = HAL_RCC_GetPCLK1Freq();
-  uint32_t psc   = htim6.Init.Prescaler + 1;              // use the PSC you already configured
-  float    Fs    = freq_hz * (float)SAMPLES;              // desired DAC update rate
+  uint32_t psc   = htim6.Init.Prescaler + 1;            
+  float    Fs    = freq_hz * (float)SAMPLES;              
 
   uint32_t arr = (uint32_t)((float)pclk1 / ((float)psc * Fs) + 0.5f);
   if (arr == 0) arr = 1;
@@ -142,20 +125,18 @@ int main(void)
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
 
-  // Build sine LUT (centered, full-scale). You can scale amplitude if you like.
   for (int i = 0; i < SAMPLES; i++)
   {
     float theta = (2.0f * PI * i) / (float)SAMPLES;
-    float s = sinf(theta);                       // -1..+1
-    SineTable[i] = (uint16_t)(DAC_OFFSET + 2047.0f * s);   // 0..4095
+    float s = sinf(theta);                      
+    SineTable[i] = (uint16_t)(DAC_OFFSET + 2047.0f * s);   
   }
-  setvbuf(stdout, NULL, _IONBF, 0);                                // <-- NEW
-
-  // Start DAC with DMA (circular)                                // <-- NEW
+  setvbuf(stdout, NULL, _IONBF, 0);                                
+                           
   HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1,
                     (uint32_t*)SineTable, SAMPLES, DAC_ALIGN_12B_R);
 
-  // Start TIM6 so it clocks the DAC via TRGO                      // <-- NEW
+
   HAL_TIM_Base_Start(&htim6);
 
   uint32_t pclk1 = HAL_RCC_GetPCLK1Freq();
@@ -175,20 +156,16 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  // Read LDR on PC1 / ADC1_IN2 (single conversion), smooth, map, retune
 	  HAL_ADC_Start(&hadc1);
 	  HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
 	  uint32_t raw = HAL_ADC_GetValue(&hadc1);
 
-	  adc_ema = (1.0f - ADC_SMOOTH_A) * adc_ema + ADC_SMOOTH_A * (float)raw;
+	  adc_ema = (1.0f - Smoothen_ADC) * adc_ema + Smoothen_ADC * (float)raw;
 
 	  float freq = map_adc_to_freq((uint32_t)adc_ema);
 	  changeNote(freq);
 
-	  // Optional debug
-	  // printf("ADC=%4lu  freq=%.1f Hz\r\n", (unsigned long)raw, (double)freq);
-
-	  HAL_Delay(5);  // smooth pitch updates without audible zippering;
+	  HAL_Delay(5);  
   }
   /* USER CODE END 3 */
 }
